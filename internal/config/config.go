@@ -20,6 +20,20 @@ import (
 
 const DefaultPanelGitHubRepository = "https://github.com/router-for-me/Cli-Proxy-API-Management-Center"
 
+// ProxyPoolEntry represents a single proxy configuration in the proxy pool.
+// Each entry has a unique ID and can be referenced by OAuth accounts.
+type ProxyPoolEntry struct {
+	// ID is the unique identifier for this proxy entry (user-defined, e.g., "us-proxy-1", "jp-socks5")
+	ID string `yaml:"id" json:"id"`
+	// Name is an optional human-readable label for this proxy
+	Name string `yaml:"name,omitempty" json:"name,omitempty"`
+	// ProxyURL is the proxy URL. Supports socks5/http/https protocols.
+	// Example: socks5://user:pass@192.168.1.1:1080/
+	ProxyURL string `yaml:"proxy-url" json:"proxy-url"`
+	// Description is an optional description of this proxy
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+}
+
 // Config represents the application's configuration, loaded from a YAML file.
 type Config struct {
 	SDKConfig `yaml:",inline"`
@@ -75,6 +89,10 @@ type Config struct {
 	// When false (default), CodexInstructionsForModel returns immediately without modification.
 	// When true, the original instruction injection logic is used.
 	CodexInstructionsEnabled bool `yaml:"codex-instructions-enabled" json:"codex-instructions-enabled"`
+
+	// ProxyPool defines a pool of named proxy configurations.
+	// Each entry can be referenced by ID when configuring OAuth accounts.
+	ProxyPool []ProxyPoolEntry `yaml:"proxy-pool,omitempty" json:"proxy-pool,omitempty"`
 
 	// GeminiKey defines Gemini API key configurations with optional routing overrides.
 	GeminiKey []GeminiKey `yaml:"gemini-api-key" json:"gemini-api-key"`
@@ -546,6 +564,9 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 	// Sanitize OpenAI compatibility providers: drop entries without base-url
 	cfg.SanitizeOpenAICompatibility()
 
+	// Sanitize and deduplicate proxy pool entries
+	cfg.SanitizeProxyPool()
+
 	// Normalize OAuth provider model exclusion map.
 	cfg.OAuthExcludedModels = NormalizeOAuthExcludedModels(cfg.OAuthExcludedModels)
 
@@ -747,6 +768,53 @@ func (cfg *Config) SanitizeGeminiKeys() {
 		out = append(out, entry)
 	}
 	cfg.GeminiKey = out
+}
+
+// SanitizeProxyPool deduplicates and normalizes proxy pool entries.
+// It removes entries with empty ID or ProxyURL, and ensures ID uniqueness.
+func (cfg *Config) SanitizeProxyPool() {
+	if cfg == nil || len(cfg.ProxyPool) == 0 {
+		return
+	}
+	seen := make(map[string]struct{}, len(cfg.ProxyPool))
+	out := make([]ProxyPoolEntry, 0, len(cfg.ProxyPool))
+	for i := range cfg.ProxyPool {
+		entry := cfg.ProxyPool[i]
+		entry.ID = strings.TrimSpace(entry.ID)
+		entry.Name = strings.TrimSpace(entry.Name)
+		entry.ProxyURL = strings.TrimSpace(entry.ProxyURL)
+		entry.Description = strings.TrimSpace(entry.Description)
+
+		// Skip entries with empty ID or ProxyURL
+		if entry.ID == "" || entry.ProxyURL == "" {
+			continue
+		}
+
+		// Ensure ID uniqueness (case-sensitive)
+		if _, exists := seen[entry.ID]; exists {
+			log.Warnf("Duplicate proxy pool ID found: %s, skipping duplicate", entry.ID)
+			continue
+		}
+
+		seen[entry.ID] = struct{}{}
+		out = append(out, entry)
+	}
+	cfg.ProxyPool = out
+}
+
+// GetProxyFromPool retrieves a proxy URL by its ID from the proxy pool.
+// Returns empty string if the ID is not found.
+func (cfg *Config) GetProxyFromPool(proxyID string) string {
+	if cfg == nil || proxyID == "" {
+		return ""
+	}
+	proxyID = strings.TrimSpace(proxyID)
+	for i := range cfg.ProxyPool {
+		if cfg.ProxyPool[i].ID == proxyID {
+			return cfg.ProxyPool[i].ProxyURL
+		}
+	}
+	return ""
 }
 
 func normalizeModelPrefix(prefix string) string {

@@ -11,6 +11,7 @@ type AccessConfig = internalconfig.AccessConfig
 type AccessProvider = internalconfig.AccessProvider
 
 type Config = internalconfig.Config
+type ProxyPoolEntry = internalconfig.ProxyPoolEntry
 
 type StreamingConfig = internalconfig.StreamingConfig
 type TLSConfig = internalconfig.TLSConfig

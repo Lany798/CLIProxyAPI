@@ -507,6 +507,17 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.PATCH("/proxy-url", s.mgmt.PutProxyURL)
 		mgmt.DELETE("/proxy-url", s.mgmt.DeleteProxyURL)
 
+		// Proxy Pool endpoints
+		mgmt.GET("/proxy-pool", s.mgmt.HandleProxyPoolList)
+		mgmt.POST("/proxy-pool", s.mgmt.HandleProxyPoolCreate)
+		mgmt.GET("/proxy-pool/:id", s.mgmt.HandleProxyPoolGet)
+		mgmt.PUT("/proxy-pool/:id", s.mgmt.HandleProxyPoolUpdate)
+		mgmt.DELETE("/proxy-pool/:id", s.mgmt.HandleProxyPoolDelete)
+
+		// Auth proxy information endpoints
+		mgmt.GET("/auth/proxy-list", s.mgmt.HandleListAuthProxies)
+		mgmt.GET("/auth/:id/proxy", s.mgmt.HandleAuthProxyInfo)
+
 		mgmt.POST("/api-call", s.mgmt.APICall)
 
 		mgmt.GET("/quota-exceeded/switch-project", s.mgmt.GetSwitchProject)

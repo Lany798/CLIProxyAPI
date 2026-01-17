@@ -58,6 +58,13 @@ func (m *Manager) Login(ctx context.Context, provider string, cfg *config.Config
 		return nil, "", fmt.Errorf("cliproxy auth: authenticator %s returned nil record", provider)
 	}
 
+	// Set ProxyPoolID from login options if provided
+	if opts != nil && opts.Metadata != nil {
+		if proxyPoolID, exists := opts.Metadata["proxy_pool_id"]; exists && proxyPoolID != "" {
+			record.ProxyPoolID = proxyPoolID
+		}
+	}
+
 	if m.store == nil {
 		return record, "", nil
 	}

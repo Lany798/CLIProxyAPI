@@ -66,11 +66,16 @@ func DoLogin(cfg *config.Config, projectID string, options *LoginOptions) {
 		callbackPrompt = nil
 	}
 
+	metadata := map[string]string{}
+	if options.ProxyPoolID != "" {
+		metadata["proxy_pool_id"] = options.ProxyPoolID
+	}
+
 	loginOpts := &sdkAuth.LoginOptions{
 		NoBrowser:    options.NoBrowser,
 		ProjectID:    trimmedProjectID,
 		CallbackPort: options.CallbackPort,
-		Metadata:     map[string]string{},
+		Metadata:     metadata,
 		Prompt:       callbackPrompt,
 	}
 

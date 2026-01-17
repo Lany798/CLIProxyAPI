@@ -56,6 +56,20 @@ usage-statistics-enabled: false
 # Proxy URL. Supports socks5/http/https protocols. Example: socks5://user:pass@192.168.1.1:1080/
 proxy-url: ""
 
+# Proxy Pool - Define multiple named proxies that can be assigned to individual OAuth accounts
+# This allows different accounts to use different proxies to avoid risk control
+# proxy-pool:
+#   - id: "us-proxy-1"                    # Unique identifier for this proxy
+#     name: "US Proxy Server 1"           # Optional human-readable name
+#     proxy-url: "socks5://user:pass@192.168.1.1:1080"
+#     description: "US-based SOCKS5 proxy"  # Optional description
+#   - id: "jp-http-proxy"
+#     name: "Japan HTTP Proxy"
+#     proxy-url: "http://proxy.jp.example.com:8080"
+#     description: "Japan-based HTTP proxy"
+#   - id: "eu-proxy"
+#     proxy-url: "https://user:pass@eu.proxy.example.com:3128"
+
 # When true, unprefixed model requests only use credentials without a prefix (except when prefix == model name).
 force-model-prefix: false
 

@@ -24,6 +24,10 @@ type LoginOptions struct {
 
 	// Prompt allows the caller to provide interactive input when needed.
 	Prompt func(prompt string) (string, error)
+
+	// ProxyPoolID is the ID of a proxy from the proxy pool to use for this account.
+	// If empty, no proxy pool entry is used (falls back to direct ProxyURL or global proxy).
+	ProxyPoolID string
 }
 
 // DoCodexLogin triggers the Codex OAuth flow through the shared authentication manager.
@@ -45,10 +49,15 @@ func DoCodexLogin(cfg *config.Config, options *LoginOptions) {
 
 	manager := newAuthManager()
 
+	metadata := map[string]string{}
+	if options.ProxyPoolID != "" {
+		metadata["proxy_pool_id"] = options.ProxyPoolID
+	}
+
 	authOpts := &sdkAuth.LoginOptions{
 		NoBrowser:    options.NoBrowser,
 		CallbackPort: options.CallbackPort,
-		Metadata:     map[string]string{},
+		Metadata:     metadata,
 		Prompt:       promptFn,
 	}
 

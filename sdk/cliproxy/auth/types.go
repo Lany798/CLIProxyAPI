@@ -36,7 +36,11 @@ type Auth struct {
 	Disabled bool `json:"disabled"`
 	// Unavailable flags transient provider unavailability (e.g. quota exceeded).
 	Unavailable bool `json:"unavailable"`
+	// ProxyPoolID references a proxy from the proxy pool configuration.
+	// When set, this takes precedence over ProxyURL.
+	ProxyPoolID string `json:"proxy_pool_id,omitempty"`
 	// ProxyURL overrides the global proxy setting for this auth if provided.
+	// This is used when ProxyPoolID is not set.
 	ProxyURL string `json:"proxy_url,omitempty"`
 	// Attributes stores provider specific metadata needed by executors (immutable configuration).
 	Attributes map[string]string `json:"attributes,omitempty"`
@@ -184,6 +188,12 @@ func (a *Auth) ProxyInfo() string {
 	if a == nil {
 		return ""
 	}
+	// Priority 1: ProxyPoolID if set
+	poolID := strings.TrimSpace(a.ProxyPoolID)
+	if poolID != "" {
+		return "via proxy pool: " + poolID
+	}
+	// Priority 2: Direct ProxyURL
 	proxyStr := strings.TrimSpace(a.ProxyURL)
 	if proxyStr == "" {
 		return ""

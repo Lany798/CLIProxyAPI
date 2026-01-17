@@ -35,10 +35,15 @@ func DoQwenLogin(cfg *config.Config, options *LoginOptions) {
 		}
 	}
 
+	metadata := map[string]string{}
+	if options.ProxyPoolID != "" {
+		metadata["proxy_pool_id"] = options.ProxyPoolID
+	}
+
 	authOpts := &sdkAuth.LoginOptions{
 		NoBrowser:    options.NoBrowser,
 		CallbackPort: options.CallbackPort,
-		Metadata:     map[string]string{},
+		Metadata:     metadata,
 		Prompt:       promptFn,
 	}
 

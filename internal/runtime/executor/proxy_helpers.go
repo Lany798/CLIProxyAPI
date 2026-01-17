@@ -15,9 +15,10 @@ import (
 )
 
 // newProxyAwareHTTPClient creates an HTTP client with proper proxy configuration priority:
-// 1. Use auth.ProxyURL if configured (highest priority)
-// 2. Use cfg.ProxyURL if auth proxy is not configured
-// 3. Use RoundTripper from context if neither are configured
+// 1. Use proxy from proxy pool if auth.ProxyPoolID is set (highest priority)
+// 2. Use auth.ProxyURL if configured
+// 3. Use cfg.ProxyURL if auth proxy is not configured
+// 4. Use RoundTripper from context if neither are configured
 //
 // Parameters:
 //   - ctx: The context containing optional RoundTripper
@@ -33,13 +34,28 @@ func newProxyAwareHTTPClient(ctx context.Context, cfg *config.Config, auth *clip
 		httpClient.Timeout = timeout
 	}
 
-	// Priority 1: Use auth.ProxyURL if configured
 	var proxyURL string
+
+	// Priority 1: Use proxy from proxy pool if auth.ProxyPoolID is set
 	if auth != nil {
+		poolID := strings.TrimSpace(auth.ProxyPoolID)
+		if poolID != "" && cfg != nil {
+			poolURL := cfg.GetProxyFromPool(poolID)
+			if poolURL != "" {
+				proxyURL = poolURL
+				log.Debugf("Using proxy from pool '%s' for auth %s", poolID, auth.ID)
+			} else {
+				log.Warnf("Proxy pool ID '%s' not found in configuration for auth %s", poolID, auth.ID)
+			}
+		}
+	}
+
+	// Priority 2: Use auth.ProxyURL if proxy pool is not used
+	if proxyURL == "" && auth != nil {
 		proxyURL = strings.TrimSpace(auth.ProxyURL)
 	}
 
-	// Priority 2: Use cfg.ProxyURL if auth proxy is not configured
+	// Priority 3: Use cfg.ProxyURL if auth proxy is not configured
 	if proxyURL == "" && cfg != nil {
 		proxyURL = strings.TrimSpace(cfg.ProxyURL)
 	}
@@ -55,7 +71,7 @@ func newProxyAwareHTTPClient(ctx context.Context, cfg *config.Config, auth *clip
 		log.Debugf("failed to setup proxy from URL: %s, falling back to context transport", proxyURL)
 	}
 
-	// Priority 3: Use RoundTripper from context (typically from RoundTripperFor)
+	// Priority 4: Use RoundTripper from context (typically from RoundTripperFor)
 	if rt, ok := ctx.Value("cliproxy.roundtripper").(http.RoundTripper); ok && rt != nil {
 		httpClient.Transport = rt
 	}
