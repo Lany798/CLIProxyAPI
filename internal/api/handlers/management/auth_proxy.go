@@ -22,8 +22,8 @@ func (h *Handler) HandleAuthProxyInfo(c *gin.Context) {
 	}
 
 	// Get the auth entry
-	auth := h.authManager.GetByID(authID)
-	if auth == nil {
+	auth, found := h.authManager.GetByID(authID)
+	if !found || auth == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "auth not found"})
 		return
 	}
@@ -83,7 +83,7 @@ func (h *Handler) HandleListAuthProxies(c *gin.Context) {
 			"auth_id":       auth.ID,
 			"provider":      auth.Provider,
 			"proxy_pool_id": auth.ProxyPoolID,
-			"status":        auth.Status.String(),
+			"status":        string(auth.Status),
 		}
 
 		// Get account info
